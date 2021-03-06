@@ -1,0 +1,36 @@
+[ikea.api]
+    host = "https://iows.ikea.com/"
+
+[ikea.api.resources]
+    availability = "retail/iows/cz/cs/stores/{store_code}/availability/SPR/{product_code}"
+
+[ikea.store_codes]
+    praha_cerny_most = "408"
+
+[ikea.product_codes]
+    hattefjaell_grey = "89252136"
+    jaervfjaellet_black = "99275632"
+    jaervfjaellet_blue = "99275627"
+
+[ikea.site]
+    homepage = "https://www.ikea.com/cz/cs/"
+    token_service = "https://www.ikea.com/cz/cs/token-service/token-service-460dd2ec0c1586ef2536.js"
+
+[ikea.headers.availability]
+    # ":authority" = "iows.ikea.com"
+    # ":method" = "GET"
+    # ":path" = "{product_api_resource}"
+    # ":scheme" = "https"
+    accept = "application/vnd.ikea.iows+json;version=1.0"
+    accept-encoding = "gzip, deflate, br"
+    accept-language = "cs-CZ,cs;q=0.9"
+    consumer = "MAMMUT#pip-range"
+    contract = "37249"
+    origin = "https://www.ikea.com"
+    referer = "https://www.ikea.com/"
+    "sec-ch-ua" = 'Google Chrome";v="89", "Chromium";v="89", ";Not A Brand";v="99"'
+    "sec-ch-ua-mobile" = "?0"
+    "sec-fetch-dest" = "empty"
+    "sec-fetch-mode" = "cors"
+    "sec-fetch-site" = "same-site"
+    "user-agent" = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.72 Safari/537.36"

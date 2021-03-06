@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "ikea_product_checker"
+version = "0.1.0"
+description = ""
+authors = ["radekBednarik <radek.bednarik@tesena.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.25.1"
+tomlkit = "^0.7.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+mypy = "^0.812"
+black = "^20.8b1"
+pylint = "^2.7.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
