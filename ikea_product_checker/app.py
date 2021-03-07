@@ -11,6 +11,7 @@ from urllib.parse import urljoin
 from requests import Response, Session
 from requests.exceptions import HTTPError
 from tomlkit import parse
+from pysendpulse.pysendpulse import PySendPulse
 
 
 def start_session() -> Session:
@@ -178,12 +179,37 @@ def create_mail_message(products_data: List[Dict[str, Any]]) -> str:
     return message
 
 
+def send_email(message: str) -> None:
+    """Sends email.
+    All configs are private, ofc.
+
+    Args:
+        message (str): email message.
+    """
+    mail_config: Dict[str, str] = load_config(".mail.config.toml")
+
+    proxy: PySendPulse = PySendPulse(
+        mail_config["REST_API_ID"],
+        mail_config["REST_API_SECRET"],
+        mail_config["TOKEN_STORAGE"],
+        memcached_host=mail_config["MEMCACHED_HOST"],
+    )
+    email = {
+        "subject": "IKEA product availability update",
+        "from": {"name": mail_config["NAME"], "email": mail_config["SENDER"]},
+        "to": [{"name": mail_config["NAME"], "email": mail_config["SENDER"]}],
+        "text": message,
+    }
+    proxy.smtp_send_mail(email)
+
+
 def main():
     """Main func."""
     config: Dict[str, Any] = load_config("config.toml")
     session: Session = start_session()
     products_data: List[Dict[str, Any]] = check_products(config, session)
     message: str = create_mail_message(products_data)
+    send_email(message)
 
     print(message)
 
