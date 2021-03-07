@@ -118,9 +118,7 @@ def prep_product_message(
     return message
 
 
-def check_products(
-    products: Dict[str, str], config: Dict[str, Any], session: Session
-) -> List[Dict[str, Any]]:
+def check_products(config: Dict[str, Any], session: Session) -> List[Dict[str, Any]]:
     """Checks all defined products for data and returns
     list of dicts containing:
 
@@ -129,7 +127,7 @@ def check_products(
     - availability forecast data of the product
 
     Args:
-        products (Dict[str, str]): product codes dict
+
         config (Dict[str, Any]): content of config file
         session (Session): requests Session class instance
 
@@ -137,6 +135,7 @@ def check_products(
         List[Dict[str, Any]]: data for further processing
     """
     output: List[Dict[str, Any]] = []
+    products = config["ikea"]["product_codes"]
 
     for name, code in list(products.items()):
         data: Dict[str, Any] = fetch_product_info(
@@ -183,11 +182,7 @@ def main():
     """Main func."""
     config: Dict[str, Any] = load_config("config.toml")
     session: Session = start_session()
-
-    products_data: List[Dict[str, Any]] = check_products(
-        config["ikea"]["product_codes"], config, session
-    )
-
+    products_data: List[Dict[str, Any]] = check_products(config, session)
     message: str = create_mail_message(products_data)
 
     print(message)
