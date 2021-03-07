@@ -216,7 +216,6 @@ def main():
     products_data: List[Dict[str, Any]] = check_products(config, session)
     message: str = create_mail_message(products_data)
     send_email(message)
-    print(message)
 
 
 if __name__ == "__main__":
