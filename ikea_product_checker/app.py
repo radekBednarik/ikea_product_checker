@@ -5,7 +5,7 @@ can be easily figured out via eny browser devtools.
 Product is available for given store, sends an email.
 '''
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, List
 from urllib.parse import urljoin
 
 from requests import Response, Session
@@ -75,16 +75,66 @@ def fetch_product_info(
         sys.exit(1)
 
 
-if __name__ == "__main__":
+def is_available(data: Dict[str, Any]) -> bool:
+    """Predicate. Is product in stock or not?
+
+    Args:
+        data (Dict[str, Any]): returned data for queried product via api call
+
+    Returns:
+        bool: `true` if available, else `false`
+    """
+    stock_count: str = data["StockAvailability"]["RetailItemAvailability"][
+        "AvailableStock"
+    ]["$"]
+    return int(stock_count) > 0
+
+
+def prep_forecast_message(data: Dict[str, Any]) -> str:
+    """Creates string with information about
+    expected availability of the product
+
+    Args:
+        data (Dict[str, Any]): data returned from api call
+
+    Returns:
+        str: formatted string info
+    """
+
+    def _pad_left(string: str, how_much: int = 5, pad_char=" ") -> str:
+        return string.rjust(len(string) + how_much, pad_char)
+
+    forecast: List[Dict[str, Any]] = data["StockAvailability"][
+        "AvailableStockForecastList"
+    ]["AvailableStockForecast"]
+
+    message: str = "Availability Forecast:\n\n".upper()
+
+    for day in forecast:
+        for key, value in list(day.items()):
+            message += f"{_pad_left(key)}: {value['$']}\n\r"
+        message += "\n==========\n\n"
+
+    return message
+
+
+def main():
+    """Main func."""
     config: Dict[str, Any] = load_config("config.toml")
     session: Session = start_session()
-    print(
-        fetch_product_info(
-            session,
-            config["ikea"]["api"]["host"],
-            config["ikea"]["api"]["resources"]["availability"],
-            config["ikea"]["store_codes"]["praha_cerny_most"],
-            config["ikea"]["product_codes"]["hattefjaell_grey"],
-            config["ikea"]["headers"]["availability"],
-        )
+
+    product: Dict[str, Any] = fetch_product_info(
+        session,
+        config["ikea"]["api"]["host"],
+        config["ikea"]["api"]["resources"]["availability"],
+        config["ikea"]["store_codes"]["praha_cerny_most"],
+        config["ikea"]["product_codes"]["hattefjaell_grey"],
+        config["ikea"]["headers"]["availability"],
     )
+
+    print(is_available(product))
+    print(prep_forecast_message(product))
+
+
+if __name__ == "__main__":
+    main()
