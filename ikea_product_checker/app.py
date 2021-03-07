@@ -11,6 +11,7 @@ from urllib.parse import urljoin
 from requests import Response, Session
 from requests.exceptions import HTTPError
 from tomlkit import parse
+from tqdm import tqdm
 from pysendpulse.pysendpulse import PySendPulse
 
 
@@ -141,7 +142,9 @@ def check_products(config: Dict[str, Any], session: Session) -> List[Dict[str, A
     output: List[Dict[str, Any]] = []
     products = config["ikea"]["product_codes"]
 
-    for name, code in list(products.items()):
+    for name, code in tqdm(
+        list(products.items()), colour="green", desc="Processing products"
+    ):
         data: Dict[str, Any] = fetch_product_info(
             session,
             config["ikea"]["api"]["host"],
