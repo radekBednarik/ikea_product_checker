@@ -5,7 +5,7 @@ can be easily figured out via eny browser devtools.
 Product is available for given store, sends an email.
 '''
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 from urllib.parse import urljoin
 
 from requests import Response, Session
@@ -76,7 +76,7 @@ def fetch_product_info(
         sys.exit(1)
 
 
-def is_available(data: Dict[str, Any]) -> bool:
+def is_available(data: Dict[str, Any]) -> Tuple[bool, str]:
     """Predicate. Is product in stock or not?
 
     Args:
@@ -88,27 +88,30 @@ def is_available(data: Dict[str, Any]) -> bool:
     stock_count: str = data["StockAvailability"]["RetailItemAvailability"][
         "AvailableStock"
     ]["$"]
-    return int(stock_count) > 0
+    return (int(stock_count) > 0, stock_count)
 
 
 def prep_product_message(
-    product_name, availability_status: bool, forecast: List[Dict[str, Any]]
+    product_name, availability_status: Tuple[bool, str], forecast: List[Dict[str, Any]]
 ) -> str:
-    """Creates string with information about
-    expected availability of the product
+    """Returns email message str for given product
 
     Args:
-        data (Dict[str, Any]): data returned from api call
+        product_name ([type]): name of the product
+        availability_status (Tuple[bool, str]): availability info
+        forecast (List[Dict[str, Any]]): forecast data
 
     Returns:
-        str: formatted string info
+        str: formatted message str
     """
 
     def _pad_left(string: str, how_much: int = 5, pad_char=" ") -> str:
         return string.rjust(len(string) + how_much, pad_char)
 
     message: str = f"Status for {product_name}:\n\n".upper()
-    message += f"Product is currently {'available' if availability_status else 'not available'}\n\n"
+    # pylint:disable= line-too-long
+    message += f"Product is currently {'available' if availability_status[0] else 'not available'} with {availability_status[1]} in stock.\n\n"
+    # pylint: enable= line-too-long
     message += "Availability Forecast:\n\n".upper()
 
     for day in forecast:
@@ -147,7 +150,7 @@ def check_products(config: Dict[str, Any], session: Session) -> List[Dict[str, A
             code,
             config["ikea"]["headers"]["availability"],
         )
-        status: bool = is_available(data)
+        status: Tuple[bool, str] = is_available(data)
         output.append(
             {
                 "name": name,
@@ -179,7 +182,7 @@ def create_mail_message(products_data: List[Dict[str, Any]]) -> str:
     return message
 
 
-def send_email(message: str) -> None:
+def send_email(message: str) -> Dict[str, Any]:
     """Sends email.
     All configs are private, ofc.
 
@@ -196,11 +199,14 @@ def send_email(message: str) -> None:
     )
     email = {
         "subject": "IKEA product availability update",
+        "html": "",
+        "text": message,
+        "template": {"id": mail_config["TEMPLATE_ID"]},
         "from": {"name": mail_config["NAME"], "email": mail_config["SENDER"]},
         "to": [{"name": mail_config["NAME"], "email": mail_config["SENDER"]}],
-        "text": message,
+        "bcc": [],
     }
-    proxy.smtp_send_mail(email)
+    return proxy.smtp_send_mail(email)
 
 
 def main():
@@ -210,7 +216,6 @@ def main():
     products_data: List[Dict[str, Any]] = check_products(config, session)
     message: str = create_mail_message(products_data)
     send_email(message)
-
     print(message)
 
 
