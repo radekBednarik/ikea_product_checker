@@ -90,7 +90,9 @@ def is_available(data: Dict[str, Any]) -> bool:
     return int(stock_count) > 0
 
 
-def prep_forecast_message(data: Dict[str, Any]) -> str:
+def prep_product_message(
+    product_name, availability_status: bool, forecast: List[Dict[str, Any]]
+) -> str:
     """Creates string with information about
     expected availability of the product
 
@@ -104,11 +106,9 @@ def prep_forecast_message(data: Dict[str, Any]) -> str:
     def _pad_left(string: str, how_much: int = 5, pad_char=" ") -> str:
         return string.rjust(len(string) + how_much, pad_char)
 
-    forecast: List[Dict[str, Any]] = data["StockAvailability"][
-        "AvailableStockForecastList"
-    ]["AvailableStockForecast"]
-
-    message: str = "Availability Forecast:\n\n".upper()
+    message: str = f"Status for {product_name}:\n\n".upper()
+    message += f"Product is currently {'available' if availability_status else 'not available'}\n\n"
+    message += "Availability Forecast:\n\n".upper()
 
     for day in forecast:
         for key, value in list(day.items()):
@@ -118,22 +118,79 @@ def prep_forecast_message(data: Dict[str, Any]) -> str:
     return message
 
 
+def check_products(
+    products: Dict[str, str], config: Dict[str, Any], session: Session
+) -> List[Dict[str, Any]]:
+    """Checks all defined products for data and returns
+    list of dicts containing:
+
+    - name of the product
+    - whehter the product is available
+    - availability forecast data of the product
+
+    Args:
+        products (Dict[str, str]): product codes dict
+        config (Dict[str, Any]): content of config file
+        session (Session): requests Session class instance
+
+    Returns:
+        List[Dict[str, Any]]: data for further processing
+    """
+    output: List[Dict[str, Any]] = []
+
+    for name, code in list(products.items()):
+        data: Dict[str, Any] = fetch_product_info(
+            session,
+            config["ikea"]["api"]["host"],
+            config["ikea"]["api"]["resources"]["availability"],
+            config["ikea"]["store_codes"]["praha_cerny_most"],
+            code,
+            config["ikea"]["headers"]["availability"],
+        )
+        status: bool = is_available(data)
+        output.append(
+            {
+                "name": name,
+                "status": status,
+                "forecast": data["StockAvailability"]["AvailableStockForecastList"][
+                    "AvailableStockForecast"
+                ],
+            }
+        )
+    return output
+
+
+def create_mail_message(products_data: List[Dict[str, Any]]) -> str:
+    """Creates the whole message and returns.
+
+    Args:
+        products_data (List[Dict[str, Any]]): data of products we want to output
+
+    Returns:
+        str: message we want to sent, formatted
+    """
+    message: str = "Availability status of IKEA products:\n\n".upper()
+
+    for product in products_data:
+        message += prep_product_message(
+            product["name"], product["status"], product["forecast"]
+        )
+
+    return message
+
+
 def main():
     """Main func."""
     config: Dict[str, Any] = load_config("config.toml")
     session: Session = start_session()
 
-    product: Dict[str, Any] = fetch_product_info(
-        session,
-        config["ikea"]["api"]["host"],
-        config["ikea"]["api"]["resources"]["availability"],
-        config["ikea"]["store_codes"]["praha_cerny_most"],
-        config["ikea"]["product_codes"]["hattefjaell_grey"],
-        config["ikea"]["headers"]["availability"],
+    products_data: List[Dict[str, Any]] = check_products(
+        config["ikea"]["product_codes"], config, session
     )
 
-    print(is_available(product))
-    print(prep_forecast_message(product))
+    message: str = create_mail_message(products_data)
+
+    print(message)
 
 
 if __name__ == "__main__":
