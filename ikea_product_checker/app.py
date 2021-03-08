@@ -1,9 +1,9 @@
-'''Ikea product avalability checker.
+"""Ikea product avalability checker.
 Checks via Ikea's "private" API, which
 can be easily figured out via eny browser devtools.
 
 Product is available for given store, sends an email.
-'''
+"""
 import sys
 from typing import Any, Dict, List, Tuple
 from urllib.parse import urljoin
@@ -93,12 +93,16 @@ def is_available(data: Dict[str, Any]) -> Tuple[bool, str]:
 
 
 def prep_product_message(
-    product_name, availability_status: Tuple[bool, str], forecast: List[Dict[str, Any]]
+    store_name: str,
+    product_name: str,
+    availability_status: Tuple[bool, str],
+    forecast: List[Dict[str, Any]],
 ) -> str:
     """Returns email message str for given product
 
     Args:
-        product_name ([type]): name of the product
+        store_name (str): name of the store
+        product_name (str): name of the product
         availability_status (Tuple[bool, str]): availability info
         forecast (List[Dict[str, Any]]): forecast data
 
@@ -109,7 +113,8 @@ def prep_product_message(
     def _pad_left(string: str, how_much: int = 5, pad_char=" ") -> str:
         return string.rjust(len(string) + how_much, pad_char)
 
-    message: str = f"Status for {product_name}:\n\n".upper()
+    message: str = f"Store: '{store_name}'\n".upper()
+    message += f"Status for {product_name}:\n\n"
     # pylint:disable= line-too-long
     message += f"Product is currently {'available' if availability_status[0] else 'not available'} with {availability_status[1]} in stock.\n\n"
     # pylint: enable= line-too-long
@@ -127,6 +132,7 @@ def check_products(config: Dict[str, Any], session: Session) -> List[Dict[str, A
     """Checks all defined products for data and returns
     list of dicts containing:
 
+    - name of the store
     - name of the product
     - whehter the product is available
     - availability forecast data of the product
@@ -140,29 +146,35 @@ def check_products(config: Dict[str, Any], session: Session) -> List[Dict[str, A
         List[Dict[str, Any]]: data for further processing
     """
     output: List[Dict[str, Any]] = []
-    products = config["ikea"]["product_codes"]
+    stores: Dict[str, str] = config["ikea"]["store_codes"]
+    products: Dict[str, str] = config["ikea"]["product_codes"]
 
-    for name, code in tqdm(
-        list(products.items()), colour="green", desc="Processing products"
+    for store_name, store_code in tqdm(
+        list(stores.items()), colour="blue", desc="Processing stores"
     ):
-        data: Dict[str, Any] = fetch_product_info(
-            session,
-            config["ikea"]["api"]["host"],
-            config["ikea"]["api"]["resources"]["availability"],
-            config["ikea"]["store_codes"]["praha_cerny_most"],
-            code,
-            config["ikea"]["headers"]["availability"],
-        )
-        status: Tuple[bool, str] = is_available(data)
-        output.append(
-            {
-                "name": name,
-                "status": status,
-                "forecast": data["StockAvailability"]["AvailableStockForecastList"][
-                    "AvailableStockForecast"
-                ],
-            }
-        )
+        for product_name, product_code in tqdm(
+            list(products.items()), colour="green", desc="Processing products"
+        ):
+            data: Dict[str, Any] = fetch_product_info(
+                session,
+                config["ikea"]["api"]["host"],
+                config["ikea"]["api"]["resources"]["availability"],
+                store_code,
+                product_code,
+                config["ikea"]["headers"]["availability"],
+            )
+            status: Tuple[bool, str] = is_available(data)
+            output.append(
+                {
+                    "store": store_name.replace("_", " "),
+                    "name": product_name,
+                    "status": status,
+                    "forecast": data["StockAvailability"]["AvailableStockForecastList"][
+                        "AvailableStockForecast"
+                    ],
+                }
+            )
+
     return output
 
 
@@ -179,7 +191,7 @@ def create_mail_message(products_data: List[Dict[str, Any]]) -> str:
 
     for product in products_data:
         message += prep_product_message(
-            product["name"], product["status"], product["forecast"]
+            product["store"], product["name"], product["status"], product["forecast"]
         )
 
     return message
@@ -218,7 +230,8 @@ def main():
     session: Session = start_session()
     products_data: List[Dict[str, Any]] = check_products(config, session)
     message: str = create_mail_message(products_data)
-    send_email(message)
+    print(message)
+    # print(send_email(message))
 
 
 if __name__ == "__main__":

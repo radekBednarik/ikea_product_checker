@@ -6,6 +6,9 @@
 
 [ikea.store_codes]
     praha_cerny_most = "408"
+    praha_zlicin = "178"
+    brno = "278"
+    ostrava = "309"
 
 [ikea.product_codes]
     hattefjaell_grey = "89252136"
