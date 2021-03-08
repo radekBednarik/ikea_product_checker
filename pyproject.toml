@@ -10,6 +10,7 @@ requests = "^2.25.1"
 tomlkit = "^0.7.0"
 pysendpulse = "^0.1.2"
 tqdm = "^4.59.0"
+colorama = "^0.4.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
