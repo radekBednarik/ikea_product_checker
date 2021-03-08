@@ -2,7 +2,9 @@
 Checks via Ikea's "private" API, which
 can be easily figured out via eny browser devtools.
 
-Product is available for given store, sends an email.
+Can notify via email - in this case via SendPulse free of charge
+service, but you have to configure it yourself.
+By default it is commented out.
 """
 import sys
 from typing import Any, Dict, List, Tuple
