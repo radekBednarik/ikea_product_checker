@@ -168,7 +168,7 @@ def check_products(config: Dict[str, Any], session: Session) -> List[Dict[str, A
             status: Tuple[bool, str] = is_available(data)
             output.append(
                 {
-                    "store": store_name.replace("_", " "),
+                    "store": store_name.replace("_", " ").capitalize(),
                     "name": product_name.replace("_", " ").capitalize(),
                     "status": status,
                     "forecast": data["StockAvailability"]["AvailableStockForecastList"][
