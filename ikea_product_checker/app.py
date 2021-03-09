@@ -116,7 +116,7 @@ def prep_product_message(
         return string.rjust(len(string) + how_much, pad_char)
 
     message: str = f"Store: '{store_name}'\n".upper()
-    message += f"Status for {product_name}:\n\n"
+    message += f"Status for '{product_name}':\n\n"
     # pylint:disable= line-too-long
     message += f"Product is currently {'available' if availability_status[0] else 'not available'} with {availability_status[1]} in stock.\n\n"
     # pylint: enable= line-too-long
@@ -169,7 +169,7 @@ def check_products(config: Dict[str, Any], session: Session) -> List[Dict[str, A
             output.append(
                 {
                     "store": store_name.replace("_", " "),
-                    "name": product_name,
+                    "name": product_name.replace("_", " ").capitalize(),
                     "status": status,
                     "forecast": data["StockAvailability"]["AvailableStockForecastList"][
                         "AvailableStockForecast"
